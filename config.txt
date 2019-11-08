@@ -1,0 +1,6 @@
+// 模式1：文件转图片
+// 模式2：图片转文件
+model=1
+DocFileName=Main.java
+colorful=true
+deflection=0

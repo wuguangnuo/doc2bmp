@@ -3,17 +3,17 @@ import java.time.LocalDateTime;
 
 public class Demo {
     // 默认路径（读取、输出文件均在此文件夹下）
-    private static String DEFAULTPATH = "C:\\Users\\Administrator\\Desktop\\test\\";
+    private static String DEFAULTPATH = "D:\\test\\";
     // 待读取的文件名
-    private static String DOCFILENAME = "w.bmp";
+    private static String DOCFILENAME = "s.txt";
     // 待读取图片名
-    private static String BMPFILENAME = "2019-10-25 15-37-03.bmp";
+    private static String BMPFILENAME = "clpm.bmp";
     // 配置文件
     private static final String CONFIG = "config.txt";
     // 图片宽度(像素)
-    private static int WIDTH = 100;
+    private static int WIDTH = 8;
     // 补位大小 complementary 大小（Byte）
-    private static int COMP = 0;
+    private static int COMP = 3960;
     // 误差模式 (加强抗干扰能力: 0~3)
     private static int DEFLECTION = 3;
     // Debug 模式
@@ -21,12 +21,14 @@ public class Demo {
     private static long timestmp = System.currentTimeMillis();
 
     public static void main(String[] args) {
+        // 初始化读取配置
         initialize();
+
         // 读取文件并生成图片
-        writeBmp(doDeflection(readDoc(DEFAULTPATH + DOCFILENAME)));
+        writeBmp(readDoc(DEFAULTPATH + DOCFILENAME));
 
         // 读取图片并还原文件
-//        writeDoc(readBmp(DEFAULTPATH + BMPFILENAME), "txt");
+        writeDoc(readBmp(DEFAULTPATH + BMPFILENAME), "zip");
 
         print("END ---");
     }
@@ -157,6 +159,14 @@ public class Demo {
      * @param data byte[]
      */
     private static void writeBmp(byte[] data) {
+        if (data == null) {
+            print("数据异常");
+            return;
+        }
+        if (DEFLECTION != 0) {
+            data = doDeflection(data);
+        }
+
         int height = data.length % (3 * WIDTH) == 0 ? data.length / 3 / WIDTH : data.length / 3 / WIDTH + 1;
         print("补位大小：" + (WIDTH * height * 3 - data.length) + "Byte");
 
@@ -280,75 +290,27 @@ public class Demo {
          * 原数 -> 16进制-> *16
          * 100 -> 0x64 -> (6*16,4*16)
          */
-        int i = 0, j = 0, l = data.length, m = (int) Math.pow(2, DEFLECTION);
-        // m = 1,2,4,8
-        byte[] res = new byte[l << DEFLECTION];
+        int i = 0, l = data.length, m = (int) Math.pow(2, DEFLECTION);
+        byte[] res = new byte[l << m];
         for (; i < l; i++) {
-            if (DEFLECTION == 1) {
-                res[i << 1] = (byte) (data[i] & 0xf0); // 0110 0000
-                res[(i << 1) + 1] = (byte) ((data[i] & 0xf) << 4); // 0100 0000
-            }
-            if (DEFLECTION == 2) {
-                res[i << 2] = (byte) (data[i] & 0xc0); // 0100 0000
-                res[(i << 2) + 1] = (byte) ((data[i] & 0x30) << 2); // 1000 0000
-                res[(i << 2) + 2] = (byte) ((data[i] & 0xc) << 4); // 0100 0000
-                res[(i << 2) + 3] = (byte) ((data[i] & 0x3) << 6); // 0000 0000
-            }
-            if (DEFLECTION == 3) {
-                for (j = 0; j < m; j++) {
-                    res[(i << DEFLECTION) + j] = (byte) ((data[i] & getFixNum(j)) << j * 8 / m);
-                }
+            res[i << 1] = (byte) (data[i] & 0x80);
+            res[(i << 1) + 1] = (byte) ((data[i] & 0x40) << 1);
+            res[(i << 1) + 2] = (byte) ((data[i] & 0x20) << 2);
+
+            for (int j = 0; j < m; j++) {
+                res[(i << 1) + j] = (byte) ((data[i] & (int) Math.pow(2, 8 - j - 1)) << j);
             }
         }
-        return fillLight(res);
-    }
+        return res;
 
-    /**
-     * 补光
-     *
-     * @param data byte[]
-     * @return byte[]
-     */
-    private static byte[] fillLight(byte[] data) {
-        int i = 0, l = data.length;
-        for (; i < l; i++) {
-            if (DEFLECTION == 1) {
-                data[i] += 8;
-            }
-            if (DEFLECTION == 2) {
-                data[i] += 32;
-            }
-            if (DEFLECTION == 3) {
-                data[i] += 64;
-            }
-        }
-        return data;
-    }
-
-    // & num
-    private static int getFixNum(int j) {
-
-        int[] a = {128, 64, 32, 16, 8, 4, 2, 1};
-        return a[j];
-//        int m = (int) Math.pow(2, DEFLECTION);
-//        int i = 0;
-//        int res = 0;
-//        switch (DEFLECTION) {
-//            case 3:
-//                res = a[j];
-//                break;
-//            case 2:
-//                for (; i < m; i++) {
-//
-//                }
-//                break;
-//            case 1:
-//                break;
-//            case 0:
-//                res = 0xff;
-//                break;
+//        黑白模式
+//        // 100 -> 0110 0100 -> 0xff,0x00
+//        byte[] res = new byte[data.length * 8 * 3];
+//        for (int i = 0; i < data.length; i++) {
+//            for (int j = 0; j < 24; j++) {
+//                res[24 * i + j] = (data[i] & new int[]{128, 64, 32, 16, 8, 4, 2, 1}[j / 3]) == 0 ? (byte) 0x00 : (byte) 0xff;
+//            }
 //        }
-//
 //        return res;
     }
 
@@ -373,6 +335,35 @@ public class Demo {
             res[i >> 1] = (byte) ((checkDeflection(data[i]) << 4) + checkDeflection(data[i + 1]));
         }
         return res;
+
+//        黑白模式
+//        /**
+//         * 误差数据 ->  纠正        -> 原来数据
+//         * (95,49) -> (6*16,4*16) -> 100
+//         */
+//        if ((data.length % 24) != 0) {
+//            print("校验异常");
+//            return null;
+//        }
+//        int i, j, m, a, b, c, l = data.length / 24;
+//        byte[] res = new byte[l];
+//        for (i = 0; i < l; i++) {
+//            m = 0x00;
+//            for (j = 0; j < 8; j++) {
+//                a = data[24 * i + 3 * j];
+//                b = data[24 * i + 3 * j + 1];
+//                c = data[24 * i + 3 * j + 2];
+//                if (a >= 0 && b >= 0 && c >= 0) {
+//                    m = m * 2;
+//                } else if (a < 0 && b < 0 && c < 0) {
+//                    m = m * 2 + 1;
+//                } else {
+//                    print("数据异常");
+//                    return null;
+//                }
+//            }
+//            res[i] = (byte) m;
+//        }
     }
 
     /**
