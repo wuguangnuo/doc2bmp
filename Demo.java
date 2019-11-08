@@ -3,54 +3,116 @@ import java.time.LocalDateTime;
 
 public class Demo {
     // 默认路径（读取、输出文件均在此文件夹下）
-    private static final String DEFAULTPATH = "C:\\Users\\Administrator\\Desktop\\test\\";
+    private static String DEFAULTPATH = "C:\\Users\\Administrator\\Desktop\\test\\";
     // 待读取的文件名
-    private static final String DOCFILENAME = "s.zip";
+    private static String DOCFILENAME = "w.bmp";
     // 待读取图片名
-    private static final String BMPFILENAME = "s.bmp";
+    private static String BMPFILENAME = "2019-10-25 15-37-03.bmp";
+    // 配置文件
+    private static final String CONFIG = "config.txt";
     // 图片宽度(像素)
-    private static final int WIDTH = 1024;
-    // 补位 complementary 大小（Byte）
-    private static final int COMP = 1013;
+    private static int WIDTH = 100;
+    // 补位大小 complementary 大小（Byte）
+    private static int COMP = 0;
+    // 误差模式 (加强抗干扰能力: 0~3)
+    private static int DEFLECTION = 3;
+    // Debug 模式
+    private static boolean ENDEBUG = true;
+    private static long timestmp = System.currentTimeMillis();
 
     public static void main(String[] args) {
-        writeBmp(readDoc(DEFAULTPATH + DOCFILENAME));
+        initialize();
+        // 读取文件并生成图片
+        writeBmp(doDeflection(readDoc(DEFAULTPATH + DOCFILENAME)));
 
-//        writeDoc(readBmp(DEFAULTPATH + BMPFILENAME), "zip");
+        // 读取图片并还原文件
+//        writeDoc(readBmp(DEFAULTPATH + BMPFILENAME), "txt");
 
         print("END ---");
+    }
+
+    /**
+     * 初始化配置
+     */
+    private static void initialize() {
+        StringBuilder sb = new StringBuilder();
+        String s;
+        try {
+            File f = new File(DEFAULTPATH + CONFIG);
+            if (f.exists()) {
+                BufferedReader br = new BufferedReader(new FileReader(DEFAULTPATH + CONFIG));
+                while ((s = br.readLine()) != null) {
+                    reFlush(s);
+                }
+                br.close();
+            }
+        } catch (IOException e) {
+            print("读取配置失败");
+            e.printStackTrace();
+        } finally {
+            print("初始化完成");
+        }
+    }
+
+    /**
+     * 更新配置数据
+     *
+     * @param s
+     */
+    private static void reFlush(String s) {
+        if (s.trim().startsWith("//")) {
+            return;
+        }
+        String[] a = s.trim().split("=");
+        if (a.length != 2) {
+            return;
+        }
+        switch (a[0].trim()) {
+            case "DEFAULTPATH":
+                DEFAULTPATH = a[1].trim();
+                break;
+            case "DOCFILENAME":
+                DOCFILENAME = a[1].trim();
+                break;
+            case "BMPFILENAME":
+                BMPFILENAME = a[1].trim();
+                break;
+            case "WIDTH":
+                WIDTH = Integer.parseInt(a[1].trim());
+                break;
+            case "COMP":
+                COMP = Integer.parseInt(a[1].trim());
+                break;
+            case "ENDEBUG":
+                ENDEBUG = "true".equals(a[1].trim().toLowerCase());
+                break;
+        }
     }
 
     /**
      * 读取BMP文件(BMP24位)
      *
      * @param path 文件路径
-     * @return char[]
+     * @return byte[]
      */
-    private static char[] readBmp(String path) {
+    private static byte[] readBmp(String path) {
         try {
-            // 创建读取文件的字节流
             FileInputStream fis = new FileInputStream(path);
             BufferedInputStream bis = new BufferedInputStream(fis);
-            // 读取时丢掉前面的18位，
-            // 读取图片的18~21的宽度
-            bis.skip(18);
+
+            bis.skip(18L);
             byte[] b = new byte[4];
             bis.read(b);
-            // 读取图片的高度22~25
             byte[] b2 = new byte[4];
             bis.read(b2);
 
-            // 得到图片的高度和宽度
             int width = byte2Int(b), heigth = byte2Int(b2);
-            // 使用数组保存得图片的高度和宽度
-            char[] date = new char[heigth * width * 3 - COMP];
+            byte[] date = new byte[heigth * width * 3 - COMP];
             print("Height：" + heigth + "，Width：" + width);
 
-            // 读取位图中的数据，位图中数据时从54位开始的，在读取数据前要丢掉前面的数据
-            bis.skip(28);
+            bis.skip(28L);
             for (int i = 0; i < heigth * width * 3 - COMP; i++) {
-                date[i] = (char) bis.read();
+                date[i] = (byte) bis.read();
             }
             print("ReadBmp Complete");
             fis.close();
@@ -68,15 +130,15 @@ public class Demo {
      * 读取文档文件
      *
      * @param path 文件路径
-     * @return char[]
+     * @return byte[]
      */
-    private static char[] readDoc(String path) {
+    private static byte[] readDoc(String path) {
         try {
             FileInputStream fis = new FileInputStream(path);
             int n = fis.available();
-            char[] data = new char[n];
+            byte[] data = new byte[n];
             for (int i = 0; i < n; i++) {
-                data[i] = (char) fis.read();
+                data[i] = (byte) fis.read();
             }
             print("ReadDoc Complete");
             fis.close();
@@ -92,84 +154,38 @@ public class Demo {
     /**
      * 写入BMP文件
      *
-     * @param data char[]
+     * @param data byte[]
      */
-    private static void writeBmp(char[] data) {
-        if (data == null) {
-            print("数据异常");
-            return;
-        }
-
+    private static void writeBmp(byte[] data) {
         int height = data.length % (3 * WIDTH) == 0 ? data.length / 3 / WIDTH : data.length / 3 / WIDTH + 1;
         print("补位大小：" + (WIDTH * height * 3 - data.length) + "Byte");
 
         String fileName = getFileName("bmp");
         try {
             FileOutputStream fos = new FileOutputStream(fileName);
-            DataOutputStream dos = new DataOutputStream(fos);
+            BufferedOutputStream bos = new BufferedOutputStream(fos);
 
             // 给文件头的变量赋值
-            int bfType = 0x424d; // 位图文件类型（0—1字节）
-            int bfSize = 54 + WIDTH * height * 3; // bmp文件的大小（2—5字节）
-            int bfReserved1 = 0; // 位图文件保留字，必须为0（6-7字节）
-            int bfReserved2 = 0; // 位图文件保留字，必须为0（8-9字节）
-            int bfOffBits = 54; // 文件头开始到位图实际数据之间的字节的偏移量（10-13字节）
+            bos.write(new byte[]{0x42, 0x4d}, 0, 2);
+            bos.write(int2Byte(54 + WIDTH * height * 3), 0, 4);
+            bos.write(new byte[]{0, 0, 0, 0, 0x36, 0, 0, 0, 0x28, 0, 0, 0}, 0, 12);
+            bos.write(int2Byte(WIDTH), 0, 4);
+            bos.write(int2Byte(height), 0, 4);
+            bos.write(new byte[]{1, 0, 0x18, 0, 0, 0, 0, 0}, 0, 8);
+            bos.write(int2Byte(WIDTH * height), 0, 4);
+            bos.write(new byte[16], 0, 16);
 
-            // 输入数据的时候要注意输入的数据在内存中要占几个字节，
-            // 然后再选择相应的写入方法，而不是它自己本身的数据类型
-            // 输入文件头数据
-            dos.writeShort(bfType); // 输入位图文件类型'BM'
-            dos.write(int2Byte(bfSize), 0, 4); // 输入位图文件大小
-            dos.write(int2Byte(bfReserved1), 0, 2); // 输入位图文件保留字
-            dos.write(int2Byte(bfReserved2), 0, 2); // 输入位图文件保留字
-            dos.write(int2Byte(bfOffBits), 0, 4); // 输入位图文件偏移量
-
-            // 给信息头的变量赋值
-            int biSize = 40; // 信息头所需的字节数（14-17字节）
-            int biWidth = WIDTH; // 位图的宽（18-21字节）
-            int biHeight = height; // 位图的高（22-25字节）
-            int biPlanes = 1; // 目标设备的级别，必须是1（26-27字节）
-            int biBitcount = 24; // 每个像素所需的位数（28-29字节），必须是1位（双色）、4位（16色）、8位（256色）或者24位（真彩色）之一。
-            int biCompression = 0; // 位图压缩类型，必须是0（不压缩）（30-33字节）、1（BI_RLEB压缩类型）或2（BI_RLE4压缩类型）之一。
-            int biSizeImage = WIDTH * height; // 实际位图图像的大小，即整个实际绘制的图像大小（34-37字节）
-            int biXPelsPerMeter = 0; // 位图水平分辨率，每米像素数（38-41字节）这个数是系统默认值
-            int biYPelsPerMeter = 0; // 位图垂直分辨率，每米像素数（42-45字节）这个数是系统默认值
-            int biClrUsed = 0; // 位图实际使用的颜色表中的颜色数（46-49字节），如果为0的话，说明全部使用了
-            int biClrImportant = 0; // 位图显示过程中重要的颜色数(50-53字节)，如果为0的话，说明全部重要
-
-            // 因为java是大端存储，那么也就是说同样会大端输出。
-            // 但计算机是按小端读取，如果我们不改变多字节数据的顺序的话，那么机器就不能正常读取。
-            // 所以首先调用方法将int数据转变为多个byte数据，并且按小端存储的顺序。
-
-            // 输入信息头数据
-            dos.write(int2Byte(biSize), 0, 4); // 输入信息头数据的总字节数
-            dos.write(int2Byte(biWidth), 0, 4); // 输入位图的宽
-            dos.write(int2Byte(biHeight), 0, 4); // 输入位图的高
-            dos.write(int2Byte(biPlanes), 0, 2); // 输入位图的目标设备级别
-            dos.write(int2Byte(biBitcount), 0, 2); // 输入每个像素占据的字节数
-            dos.write(int2Byte(biCompression), 0, 4); // 输入位图的压缩类型
-            dos.write(int2Byte(biSizeImage), 0, 4); // 输入位图的实际大小
-            dos.write(int2Byte(biXPelsPerMeter), 0, 4); // 输入位图的水平分辨率
-            dos.write(int2Byte(biYPelsPerMeter), 0, 4); // 输入位图的垂直分辨率
-            dos.write(int2Byte(biClrUsed), 0, 4); // 输入位图使用的总颜色数
-            dos.write(int2Byte(biClrImportant), 0, 4); // 输入位图使用过程中重要的颜色数
-
-            // 因为是24位图，所以没有颜色表
-            // 通过遍历输入位图数据
-            // 这里遍历的时候注意，在计算机内存中位图数据是从左到右，从下到上来保存的，
-            // 也就是说实际图像的第一行的点在内存是最后一行
             int x = 0, y = data.length;
             for (int i = height - 1; i >= 0; i--) {
                 for (int j = 0; j < WIDTH; j++) {
-                    dos.write(x < y ? int2Byte(data[x]) : int2Byte(0x00), 0, 1);
-                    dos.write(x + 1 < y ? int2Byte(data[x + 1]) : int2Byte(0x00), 0, 1);
-                    dos.write(x + 2 < y ? int2Byte(data[x + 2]) : int2Byte(0x00), 0, 1);
+                    bos.write(x < y ? new byte[]{(byte) data[x]} : new byte[1], 0, 1);
+                    bos.write(x + 1 < y ? new byte[]{(byte) data[x + 1]} : new byte[1], 0, 1);
+                    bos.write(x + 2 < y ? new byte[]{(byte) data[x + 2]} : new byte[1], 0, 1);
                     x += 3;
                 }
             }
-            //关闭数据的传输
-            dos.flush();
-            dos.close();
+            bos.flush();
+            bos.close();
             fos.close();
             print("WriteBmp Success");
         } catch (FileNotFoundException e) {
@@ -182,15 +198,19 @@ public class Demo {
     /**
      * 写入文档文件
      *
-     * @param data   char[]
+     * @param data   byte[]
      * @param suffix 后缀
      */
-    private static void writeDoc(char[] data, String suffix) {
+    private static void writeDoc(byte[] data, String suffix) {
+        if (DEFLECTION != 0) {
+            data = reDeflection(data);
+        }
+
         String fileName = getFileName(suffix);
         File file = new File(fileName);
         try {
             FileOutputStream fos = new FileOutputStream(file);
-            for (char c : data) {
+            for (byte c : data) {
                 fos.write(c);
             }
             print("WriteDoc Success");
@@ -209,7 +229,7 @@ public class Demo {
      * @return int
      */
     private static int byte2Int(byte[] b) {
-        return (b[3] & 0xff << 24) | (b[2] & 0xff) << 16 | (b[1] & 0xff) << 8 | b[0] & 0xff;
+        return (b[3] & 0xff) << 24 | (b[2] & 0xff) << 16 | (b[1] & 0xff) << 8 | b[0] & 0xff;
     }
 
     /**
@@ -231,7 +251,9 @@ public class Demo {
      * @param x 打印的内容
      */
     private static void print(String x) {
-        System.out.println("--- " + x + " ;");
+        long n = System.currentTimeMillis();
+        System.out.println("--- " + x + (ENDEBUG ? " " + (n - timestmp) + "ms" : "") + " ;");
+        timestmp = n;
     }
 
     /**
@@ -241,6 +263,125 @@ public class Demo {
      * @return FilePath
      */
     private static String getFileName(String suffix) {
-        return DEFAULTPATH + LocalDateTime.now().toString().replaceAll(":", "-").replaceAll("T", " ").substring(0, 19) + "." + suffix;
+        return DEFAULTPATH + LocalDateTime.now().toString()
+                .replaceAll(":", "-")
+                .replaceAll("T", " ")
+                .substring(0, 19) + "." + suffix;
+    }
+
+    /**
+     * 增加误差
+     *
+     * @param data byte[]
+     * @return byte[]
+     */
+    private static byte[] doDeflection(byte[] data) {
+        /**
+         * 原数 -> 16进制-> *16
+         * 100 -> 0x64 -> (6*16,4*16)
+         */
+        int i = 0, j = 0, l = data.length, m = (int) Math.pow(2, DEFLECTION);
+        // m = 1,2,4,8
+        byte[] res = new byte[l << DEFLECTION];
+        for (; i < l; i++) {
+            if (DEFLECTION == 1) {
+                res[i << 1] = (byte) (data[i] & 0xf0); // 0110 0000
+                res[(i << 1) + 1] = (byte) ((data[i] & 0xf) << 4); // 0100 0000
+            }
+            if (DEFLECTION == 2) {
+                res[i << 2] = (byte) (data[i] & 0xc0); // 0100 0000
+                res[(i << 2) + 1] = (byte) ((data[i] & 0x30) << 2); // 1000 0000
+                res[(i << 2) + 2] = (byte) ((data[i] & 0xc) << 4); // 0100 0000
+                res[(i << 2) + 3] = (byte) ((data[i] & 0x3) << 6); // 0000 0000
+            }
+            if (DEFLECTION == 3) {
+                for (j = 0; j < m; j++) {
+                    res[(i << DEFLECTION) + j] = (byte) ((data[i] & getFixNum(j)) << j * 8 / m);
+                }
+            }
+        }
+        return fillLight(res);
+    }
+
+    /**
+     * 补光
+     *
+     * @param data byte[]
+     * @return byte[]
+     */
+    private static byte[] fillLight(byte[] data) {
+        int i = 0, l = data.length;
+        for (; i < l; i++) {
+            if (DEFLECTION == 1) {
+                data[i] += 8;
+            }
+            if (DEFLECTION == 2) {
+                data[i] += 32;
+            }
+            if (DEFLECTION == 3) {
+                data[i] += 64;
+            }
+        }
+        return data;
+    }
+
+    // & num
+    private static int getFixNum(int j) {
+
+        int[] a = {128, 64, 32, 16, 8, 4, 2, 1};
+        return a[j];
+//        int m = (int) Math.pow(2, DEFLECTION);
+//        int i = 0;
+//        int res = 0;
+//        switch (DEFLECTION) {
+//            case 3:
+//                res = a[j];
+//                break;
+//            case 2:
+//                for (; i < m; i++) {
+//
+//                }
+//                break;
+//            case 1:
+//                break;
+//            case 0:
+//                res = 0xff;
+//                break;
+//        }
+//
+//        return res;
+    }
+
+    /**
+     * 减少误差
+     *
+     * @param data byte[]
+     * @return byte[]
+     */
+    private static byte[] reDeflection(byte[] data) {
+        /**
+         * 误差数据 ->  纠正        -> 原来数据
+         * (95,49) -> (6*16,4*16) -> 100
+         */
+        if ((data.length & 1) == 1) {
+            print("校验异常");
+            return null;
+        }
+        int i = 0, l = data.length;
+        byte[] res = new byte[l >> 1];
+        for (; i < l; i += 2) {
+            res[i >> 1] = (byte) ((checkDeflection(data[i]) << 4) + checkDeflection(data[i + 1]));
+        }
+        return res;
+    }
+
+    /**
+     * 勘误
+     *
+     * @param a 勘误前
+     * @return 勘误后
+     */
+    private static int checkDeflection(int a) {
+        return (a & 0xf) > 8 ? (a >> 4) + 1 : a >> 4;
     }
 }
