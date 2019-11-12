@@ -18,7 +18,7 @@ public class Main {
                 break;
             case 2:
                 // 读取图片并还原文件
-                writeDoc(readBmp(config.getDefaultPath() + "\\" + config.getBmpFileName()), "zip");
+                writeDoc(readBmp(config.getDefaultPath() + "\\" + config.getBmpFileName()), config.getSuffix());
                 break;
         }
 
@@ -90,12 +90,11 @@ public class Main {
     private static byte[] readDoc(String path) {
         try {
             FileInputStream fis = new FileInputStream(path);
-            int n = fis.available();
-            byte[] data = new byte[n];
-            for (int i = 0; i < n; i++) {
-                data[i] = (byte) fis.read();
-            }
+            BufferedInputStream bis = new BufferedInputStream(fis);
+            byte[] data = new byte[bis.available()];
+            bis.read(data);
             print("ReadDoc Complete");
+            bis.close();
             fis.close();
             return data;
         } catch (FileNotFoundException e) {
@@ -128,12 +127,10 @@ public class Main {
             print("Height：" + heigth + "，Width：" + width);
 
             bis.skip(28L);
-            for (int i = 0; i < heigth * width * 3 - config.getComplementary(); i++) {
-                date[i] = (byte) bis.read();
-            }
+            bis.read(date);
             print("ReadBmp Complete");
-            fis.close();
             bis.close();
+            fis.close();
             return date;
         } catch (FileNotFoundException e) {
             print("读取文件错误");
@@ -156,10 +153,10 @@ public class Main {
         File file = new File(fileName);
         try {
             FileOutputStream fos = new FileOutputStream(file);
-            for (byte c : data) {
-                fos.write(c);
-            }
+            BufferedOutputStream bos = new BufferedOutputStream(fos);
+            bos.write(data, 0, data.length);
             print("WriteDoc Success");
+            bos.close();
             fos.close();
         } catch (FileNotFoundException e) {
             print("创建文件失败");
@@ -195,16 +192,9 @@ public class Main {
             bos.write(int2Byte(width * height), 0, 4);
             bos.write(new byte[16], 0, 0x10);
 
-            int x = 0, y = data.length;
-            for (int i = height - 1; i >= 0; i--) {
-                for (int j = 0; j < width; j++) {
-                    bos.write(x < y ? new byte[]{data[x]} : new byte[1], 0, 1);
-                    bos.write(x + 1 < y ? new byte[]{data[x + 1]} : new byte[1], 0, 1);
-                    bos.write(x + 2 < y ? new byte[]{data[x + 2]} : new byte[1], 0, 1);
-                    x += 3;
-                }
-            }
-            bos.flush();
+            bos.write(data);
+            bos.write(new byte[width * height * 3 - data.length]);
+
             bos.close();
             fos.close();
             print("WriteBmp Success");
@@ -222,60 +212,11 @@ public class Main {
      * @return byte[]
      */
     private static byte[] doDeflection(byte[] data) {
-/*
-            // 黑白 2 色
-            if (x == 3) {
-                byte[] res = new byte[data.length * 8 * 3];
-                for (int i = 0; i < data.length; i++) {
-                    for (int j = 0; j < 24; j++) {
-                        int a = (data[i] & new int[]{128, 64, 32, 16, 8, 4, 2, 1}[j / 3]) >> (7 - （j / 3）);
-                        res[24 * i + j] = (data[i] & new int[]{128, 64, 32, 16, 8, 4, 2, 1}[j / 3]) == 0 ? (byte) 0x00 : (byte) 0xff;
-                    }
-                }
-                return res;
-            }
-            // 黑白 4 色
-            if (x == 2) {
-                byte[] res = new byte[data.length * 4 * 3];
-                for (int i = 0; i < data.length; i++) {
-                    for (int j = 0; j < 12; j++) {
-                        int a = (data[i] & new int[]{192, 48, 12, 3}[j / 3]) >> (6 - (j / 3 * 2));
-                        res[12 * i + j] = a == 0 ? (byte) 0x00 : (byte) (64 * a + 63);
-                    }
-                }
-                return res;
-            }
-
-            // 黑白 16 色
-            if (x == 1) {
-                byte[] res = new byte[data.length * 2 * 3];
-                for (int i = 0; i < data.length; i++) {
-                    for (int j = 0; j < 6; j++) {
-                        int a = (data[i] & new int[]{240, 15}[j / 3]) >> (4 - (j / 3 * 4));
-                        res[6 * i + j] = a == 0 ? (byte) 0x00 : (byte) (16 * a + 15);
-                    }
-                }
-                return res;
-            }
-
-            // 黑白 256 色
-            if (x == 0) {
-                byte[] res = new byte[data.length * 3];
-                for (int i = 0; i < data.length; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        res[3 * i + j] = data[i];
-                    }
-                }
-                return res;
-            }
-
- */
-        // i, j, a 计数器
+        // i, j, a 计数器;
         int i, j, a;
         // x 误差等级, b 彩色模式调整
         int x = config.getDeflection(), b = config.isColorful() ? 1 : 3;
         int m = pow(2, x), n = pow(2, 3 - x);
-
         byte[] res = new byte[data.length * m * b];
         for (i = 0; i < data.length; i++) {
             for (j = 0; j < m * b; j++) {
@@ -289,22 +230,10 @@ public class Main {
     /**
      * 辅助函数
      *
-     * @param y
-     * @return
+     * @param y int
+     * @return int
      */
     private static int getHelp(int y) {
-//        switch (config.getDeflection()) {
-//            case 3:
-//                return new int[]{128, 64, 32, 16, 8, 4, 2, 1}[y];
-//            case 2:
-//                return new int[]{192, 48, 12, 3}[y];
-//            case 1:
-//                return new int[]{240, 15}[y];
-//            case 0:
-//                return new int[]{255}[y];
-//        }
-//        return 0;
-
         int r, c, i, j, x = config.getDeflection();
         int[] base = new int[]{128, 64, 32, 16, 8, 4, 2, 1}, arr = new int[pow(2, x)];
 
@@ -336,7 +265,7 @@ public class Main {
         for (i = 0; i < l; i++) {
             r = 0;
             for (j = 0; j < pow(2, x); j++) {
-                a = correct(data[i * pow(2, x) + j]);
+                a = checkDeflection(data[i * pow(2, x) + j]);
                 r += ((a + (a < 0 ? 0x100 : 0)) >> j * pow(2, 3 - x)) & getHelp(j);
             }
             res[i] = (byte) r;
@@ -345,42 +274,55 @@ public class Main {
     }
 
     /**
-     * 矫正
-     *
-     * @param m
-     * @return
-     */
-    private static int correct(int m) {
-        assert m > -1 && m < 256;
-        return m;
-    }
-
-    /**
      * 黑白长度除三
      *
-     * @param data
-     * @return
+     * @param data byte[]
+     * @return byte[]
      */
     private static byte[] wb2color(byte[] data) {
         byte[] res = new byte[data.length / 3];
         for (int i = 0; i < data.length; i += 3) {
             if (data[i] == data[i + 1] && data[i] == data[i + 2]) {
                 res[i / 3] = data[i];
-//                tCollect++;
             } else {
                 if (data[i] == data[i + 1] || data[i] == data[i + 2]) {
                     res[i / 3] = data[i];
-//                    wCollect++;
                 } else if (data[i + 1] == data[i + 2]) {
                     res[i / 3] = data[i + 1];
-//                    wCollect++;
                 } else {
                     res[i / 3] = (byte) ((data[i] + data[i + 1] + data[i + 2]) / 3);
-//                    eCollect++;
                 }
             }
         }
         return res;
+    }
+
+    /**
+     * 勘误
+     *
+     * @param a 勘误前
+     * @return 勘误后
+     */
+    private static int checkDeflection(int a) {
+        if (config.getDeflection() == 0) {
+            return a;
+        }
+        int t = pow(2, (8 - pow(2, 3 - config.getDeflection())));
+        if (a >= 0) {
+            a /= t;
+            if (a == 0) {
+                return 0;
+            } else {
+                return a * t + t - 1;
+            }
+        } else {
+            a /= t;
+            if (a == 0) {
+                return -1;
+            } else {
+                return a * t - 1;
+            }
+        }
     }
 
     /**
@@ -430,8 +372,14 @@ public class Main {
      * @return the value {@code a}<sup>{@code b}</sup>.
      */
     private static int pow(int a, int b) {
-        int r = 1;
-        for (int i = 0; i < b; i++) {
+        if (b < 0) {
+            return 1;
+        }
+        if (a == 2) {
+            return 1 << b;
+        }
+        int i, r = 1;
+        for (i = 0; i < b; i++) {
             r *= a;
         }
         return r;
@@ -479,9 +427,11 @@ class Config {
     // 模式 文件转图片:1 图片转文件:2
     private int model = 1;
     // 待读取的文件名
-    private String docFileName = "s.txt";
+    private String docFileName = "s.zip";
     // 待读取图片名
-    private String bmpFileName = "clpm.bmp";
+    private String bmpFileName = "s.bmp";
+    // 生成的文件后缀
+    private String suffix = "zip";
     // 图片宽度(像素)
     private int width = 1024;
     // 补位大小 complementary 大小（Byte）
@@ -489,7 +439,7 @@ class Config {
     // 误差模式 (加强抗干扰能力: 0~3)
     private int deflection = 0;
     // 彩色模式
-    private boolean colorful = false;
+    private boolean colorful = true;
     // Debug 模式
     private boolean debug = true;
 
@@ -517,6 +467,10 @@ class Config {
         return bmpFileName;
     }
 
+    public String getSuffix() {
+        return suffix;
+    }
+
     public int getWidth() {
         return width;
     }
@@ -537,7 +491,7 @@ class Config {
         return debug;
     }
 
-    public Config setModel(String model) {
+    public void setModel(String model) {
         if ("1".equals(model)) {
             this.model = 1;
         } else if ("2".equals(model)) {
@@ -545,43 +499,44 @@ class Config {
         } else {
             throw new RuntimeException("config.model 错误");
         }
-        return this;
     }
 
-    public Config setDocFileName(String docFileName) {
+    public void setDocFileName(String docFileName) {
         this.docFileName = docFileName;
-        return this;
     }
 
-    public Config setBmpFileName(String bmpFileName) {
+    public void setBmpFileName(String bmpFileName) {
         String[] f = bmpFileName.split("[.]");
         if (f.length < 2 || !"bmp".equalsIgnoreCase(f[f.length - 1])) {
             throw new RuntimeException("config.bmpFileName 错误,应为bmp格式");
         }
         this.bmpFileName = bmpFileName;
-        return this;
     }
 
-    public Config setWidth(String width) {
+    public void setSuffix(String suffix) {
+        if (suffix.contains(".")) {
+            throw new RuntimeException("config.suffix 错误,不能包含‘.’");
+        }
+        this.suffix = suffix;
+    }
+
+    public void setWidth(String width) {
         this.width = Integer.parseInt(width);
-        return this;
     }
 
-    public Config setComplementary(String complementary) {
+    public void setComplementary(String complementary) {
         this.complementary = Integer.parseInt(complementary);
-        return this;
     }
 
-    public Config setDeflection(String deflection) {
+    public void setDeflection(String deflection) {
         int d = Integer.parseInt(deflection);
         if (d < 0 || d > 3) {
             throw new RuntimeException("config.deflection 错误,取值0~3整数");
         }
         this.deflection = d;
-        return this;
     }
 
-    public Config setColorful(String colorful) {
+    public void setColorful(String colorful) {
         if ("true".equalsIgnoreCase(colorful)) {
             this.colorful = true;
         } else if ("false".equalsIgnoreCase(colorful)) {
@@ -589,10 +544,9 @@ class Config {
         } else {
             throw new RuntimeException("config.colorful 错误");
         }
-        return this;
     }
 
-    public Config setDebug(String debug) {
+    public void setDebug(String debug) {
         if ("true".equalsIgnoreCase(debug)) {
             this.debug = true;
         } else if ("false".equalsIgnoreCase(debug)) {
@@ -600,7 +554,6 @@ class Config {
         } else {
             throw new RuntimeException("config.debug 错误");
         }
-        return this;
     }
 
     @Override

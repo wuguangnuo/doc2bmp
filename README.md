@@ -8,6 +8,9 @@
 
 使用方法：
 云桌面环境下 doc2bmp:
+
 ![doc2bmp](https://github.com/wuguangnuo/doc2bmp/blob/master/img/doc2bmp.png)
+
 本机环境下 bmp2doc:
+
 ![bmp2doc](https://github.com/wuguangnuo/doc2bmp/blob/master/img/bmp2doc.png)
