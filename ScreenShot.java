@@ -14,7 +14,7 @@ import javax.swing.Timer;
  * 外部使用
  * 定时截图
  */
-public class ScreenShotTask {
+public class ScreenShot {
     private static IO io = IO.getInstance();
     private static Config config = io.getConfig();
 
