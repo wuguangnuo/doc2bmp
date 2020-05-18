@@ -57,12 +57,14 @@ public class Outside {
         byte[] data = io.readBmp(n);
         if (data.length != config.getWidth() * config.getWidth() * 3) {
             io.deleteFile(n);
+            io.print("删除原因:图片错误");
             return;
         }
 
         for (int i = 0; i < config.getWidth(); i++) {
             if (!accept(data[(int) (Math.random() * config.getWidth() * config.getWidth() * 3)])) {
                 io.deleteFile(n);
+                io.print("删除原因:严格模式");
                 return;
             }
         }

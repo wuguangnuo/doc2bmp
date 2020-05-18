@@ -3,11 +3,13 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.Timer;
 
 /**
  * 内部使用
@@ -44,7 +46,29 @@ public class ShowBmp extends JFrame {
         getContentPane().setBackground(Color.green);
         getContentPane().setVisible(true);
 
-        Timer timer = new Timer(config.getDelay(), e -> {
+        // 旧的定时器
+//        Timer timer = new Timer(config.getDelay(), e -> {
+//            if (t >= bmpFiles.size()) {
+//                io.print("END ---");
+//                System.exit(1);
+//            }
+//            if (t >= 0) {
+//                io.print("第" + (t + 1) + "张: " + bmpFiles.get(t).substring(config.getDefaultPath().length()));
+//                try {
+//                    label.setIcon(new ImageIcon(ImageIO.read(new File(bmpFiles.get(t)))));
+//                } catch (IOException ex) {
+//                    ex.printStackTrace();
+//                }
+//            } else {
+//                io.print("等待..");
+//            }
+//            t++;
+//        });
+//        timer.start();
+
+        // 新的定时任务-固定延迟
+        ScheduledExecutorService service = Executors.newScheduledThreadPool(5);
+        service.scheduleWithFixedDelay(() -> {
             if (t >= bmpFiles.size()) {
                 io.print("END ---");
                 System.exit(1);
@@ -60,7 +84,6 @@ public class ShowBmp extends JFrame {
                 io.print("等待..");
             }
             t++;
-        });
-        timer.start();
+        }, 3000L, 1000L, TimeUnit.MILLISECONDS);
     }
 }
