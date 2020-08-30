@@ -1,14 +1,9 @@
 import javax.swing.filechooser.FileSystemView;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Properties;
 
 /**
  * 统一配置
@@ -172,7 +167,7 @@ public class Config {
      * @param s 一行配置
      */
     private void reFlush(String s) {
-        if (s.trim().startsWith("//")) {
+        if (s.trim().startsWith("//") || s.trim().startsWith("#")) {
             return;
         }
         String[] a = s.trim().split("=");

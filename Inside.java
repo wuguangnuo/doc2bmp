@@ -29,7 +29,7 @@ public class Inside {
             writeBmps(io.readDoc(path));
         }
 
-        io.print("END ---");
+        io.end();
     }
 
     private static void writeBmps(byte[] data) {

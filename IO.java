@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
@@ -23,6 +24,8 @@ public class IO {
     private static final String separator = File.separator;
     private static final String fn = LocalDateTime.now().toString()
             .replaceAll(":", "").replaceAll("-", "").split("[.]")[0];
+
+    private static boolean isFace = true;
 
     public static IO getInstance() {
         return new IO();
@@ -81,9 +84,9 @@ public class IO {
             fis.close();
             return data;
         } catch (FileNotFoundException e) {
-            print("读取文件[" + path + "]错误");
+            printErr("读取文件[" + path + "]错误");
         } catch (IOException e) {
-            print("IO异常");
+            printErr("IO异常");
         }
         return null;
     }
@@ -114,9 +117,9 @@ public class IO {
             fis.close();
             return date;
         } catch (FileNotFoundException e) {
-            print("读取文件[" + path + "]错误");
+            printErr("读取文件[" + path + "]错误");
         } catch (IOException e) {
-            print("IO异常");
+            printErr("IO异常");
         }
         return null;
     }
@@ -140,9 +143,9 @@ public class IO {
             fos.close();
             print("生成文件[" + fileName + "]完成");
         } catch (FileNotFoundException e) {
-            print("创建文件[" + fileName + "]失败");
+            printErr("创建文件[" + fileName + "]失败");
         } catch (IOException e) {
-            print("IO异常");
+            printErr("IO异常");
         }
     }
 
@@ -179,9 +182,9 @@ public class IO {
             fos.close();
             print("生成图片[" + fileName + "]完成");
         } catch (FileNotFoundException e) {
-            print("创建图片[" + fileName + "]失败");
+            printErr("创建图片[" + fileName + "]失败");
         } catch (IOException e) {
-            print("IO异常");
+            printErr("IO异常");
         }
     }
 
@@ -196,7 +199,7 @@ public class IO {
             f.delete();
             print("删除文件[" + path + "]成功");
         } else {
-            print("删除文件[" + path + "]错误,文件不存在");
+            printErr("删除文件[" + path + "]错误,文件不存在");
         }
     }
 
@@ -231,16 +234,44 @@ public class IO {
     }
 
     /**
+     * 格式化打印异常
+     *
+     * @param x 打印的内容
+     */
+    public void printErr(String x) {
+        print(x);
+        if (isFace) {
+            JOptionPane.showMessageDialog(null, x);
+//            System.exit(1);
+        }
+    }
+
+    /**
      * 获取输入
      *
      * @param x message
      * @return input
      */
     public String scanner(String x) {
-        System.out.println(x);
-        String input = new Scanner(System.in).nextLine();
+        String input = null;
+        while (input == null || "".equals(input)) {
+            if (isFace) {
+                input = JOptionPane.showInputDialog(x);
+            } else {
+                System.out.println(x);
+                input = new Scanner(System.in).nextLine();
+            }
+        }
+
         print(x + input);
         return input.trim();
+    }
+
+    /**
+     * 执行结束
+     */
+    public void end() {
+        printErr("END ---");
     }
 
     /**

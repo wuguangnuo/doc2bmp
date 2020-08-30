@@ -11,7 +11,7 @@ public class Outside {
 
     public static void main(String[] args) {
         String input = io.scanner("输入文件夹名：");
-        int length = Integer.parseInt(io.scanner("输入文件大小(byte)："));
+        int length = Integer.parseInt(io.scanner("输入文件大小(byte)：").replaceAll(",", ""));
 
         wash(config.getDefaultPath() + io.separator() + input);
 
@@ -30,7 +30,7 @@ public class Outside {
         }
         io.writeDoc(data, config.getSuffix());
 
-        io.print("END ---");
+        io.end();
     }
 
     /**
