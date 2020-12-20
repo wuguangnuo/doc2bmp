@@ -37,6 +37,10 @@ public class ScreenShot {
         timer.start();
     }
 
+    public static void kill() {
+        maxNum = 0;
+    }
+
     private static void screenShot() {
         num++;
         String path = io.getFileName(suffix, true);
@@ -68,8 +72,7 @@ public class ScreenShot {
             e.printStackTrace();
         }
         if (num >= maxNum) {
-            io.print("END ---");
-            System.exit(1);
+            io.end();
         }
     }
 

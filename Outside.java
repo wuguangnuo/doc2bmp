@@ -11,7 +11,7 @@ public class Outside {
 
     public static void main(String[] args) {
         String input = io.scanner("输入文件夹名：");
-        int length = Integer.parseInt(io.scanner("输入文件大小(byte)："));
+        int length = Integer.parseInt(io.scanner("输入文件大小(byte)：").replaceAll(",", ""));
 
         wash(config.getDefaultPath() + io.separator() + input);
 
@@ -30,7 +30,7 @@ public class Outside {
         }
         io.writeDoc(data, config.getSuffix());
 
-        io.print("END ---");
+        io.end();
     }
 
     /**
@@ -57,14 +57,12 @@ public class Outside {
         byte[] data = io.readBmp(n);
         if (data.length != config.getWidth() * config.getWidth() * 3) {
             io.deleteFile(n);
-            io.print("删除原因:图片错误");
             return;
         }
 
         for (int i = 0; i < config.getWidth(); i++) {
             if (!accept(data[(int) (Math.random() * config.getWidth() * config.getWidth() * 3)])) {
                 io.deleteFile(n);
-                io.print("删除原因:严格模式");
                 return;
             }
         }

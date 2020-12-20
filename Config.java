@@ -47,7 +47,7 @@ public class Config {
         this.colorful = false;
         this.debug = true;
         this.delay = 1000;
-        this.blockSize = 36;
+        this.blockSize = 50;
 
         initialize();
     }
