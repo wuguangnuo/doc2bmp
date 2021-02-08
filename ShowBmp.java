@@ -49,7 +49,7 @@ public class ShowBmp extends JFrame {
         service.scheduleWithFixedDelay(() -> {
                     if (t >= bmpFiles.size()) {
                         this.setVisible(false);
-                        io.end();
+                        io.close();
                     }
                     if (t >= 0) {
                         io.print("第" + (t + 1) + "张: " + bmpFiles.get(t).substring(config.getDefaultPath().length()));

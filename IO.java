@@ -281,6 +281,14 @@ public class IO {
     }
 
     /**
+     * 关闭窗口
+     */
+    public void close() {
+        print("END ---");
+        System.exit(1);
+    }
+
+    /**
      * 增加误差(白移)
      *
      * @param data byte[]
