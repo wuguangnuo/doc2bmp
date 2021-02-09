@@ -25,7 +25,7 @@ public class ScreenShot {
     private static int x = 50;
     private static int y = 61;
     private static int width = config.getWidth();
-    private static int height = width;
+    private static int height = config.getHeight();
     private static String suffix = "bmp";
     private static int period = config.getDelay() / 3;
     private static Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
@@ -85,8 +85,8 @@ public class ScreenShot {
         }
         byte[] data = baos.toByteArray();
 
-        for (int i = 0; i < config.getWidth(); i++) {
-            if (!Outside.accept(data[(int) (Math.random() * config.getWidth() * config.getWidth() * 3) + 54])) {
+        for (int i = 0; i < width; i++) {
+            if (!Outside.accept(data[(int) (Math.random() * width * height * 3) + 54])) {
                 return false;
             }
         }

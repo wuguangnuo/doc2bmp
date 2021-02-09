@@ -55,13 +55,13 @@ public class Outside {
      */
     private static void check(String n) {
         byte[] data = io.readBmp(n);
-        if (data.length != config.getWidth() * config.getWidth() * 3) {
+        if (data.length != config.getWidth() * config.getHeight() * 3) {
             io.deleteFile(n);
             return;
         }
 
         for (int i = 0; i < config.getWidth(); i++) {
-            if (!accept(data[(int) (Math.random() * config.getWidth() * config.getWidth() * 3)])) {
+            if (!accept(data[(int) (Math.random() * config.getWidth() * config.getHeight() * 3)])) {
                 io.deleteFile(n);
                 return;
             }

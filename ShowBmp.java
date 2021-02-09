@@ -41,7 +41,7 @@ public class ShowBmp extends JFrame {
         label = new JLabel(new ImageIcon(image));
         add(label);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(config.getWidth() + 100, config.getWidth() + 100);
+        setSize(config.getWidth() + 100, config.getHeight() + 100);
         getContentPane().setBackground(Color.green);
         getContentPane().setVisible(true);
 

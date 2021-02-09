@@ -14,7 +14,7 @@ public class Inside {
         int docLength = io.docLength(path);
         if (docLength > blockSize) {
             int n = docLength / blockSize, r = docLength % blockSize;
-            int pageSize = config.getWidth() * config.getWidth() * (config.isColorful() ? 3 : 1) / io.pow(2, config.getDeflection());
+            int pageSize = config.getWidth() * config.getHeight() * (config.isColorful() ? 3 : 1) / io.pow(2, config.getDeflection());
             int pageNum = (docLength / pageSize) + (docLength % pageSize == 0 ? 0 : 1);
             io.print("文件大小(byte)=" + docLength + ", 图片数量=" + pageNum + ", 触发大文件处理，分块数=" + (n + (r == 0 ? 0 : 1)));
             for (int i = 0; i < n; i++) {
@@ -33,7 +33,7 @@ public class Inside {
     }
 
     private static void writeBmps(byte[] data) {
-        int pageSize = config.getWidth() * config.getWidth() * (config.isColorful() ? 3 : 1) / io.pow(2, config.getDeflection());
+        int pageSize = config.getWidth() * config.getHeight() * (config.isColorful() ? 3 : 1) / io.pow(2, config.getDeflection());
         int pageNum = (data.length / pageSize) + (data.length % pageSize == 0 ? 0 : 1);
         io.print("文件大小(byte)=" + data.length + ", 图片数量=" + pageNum);
         byte[] dataTrans;

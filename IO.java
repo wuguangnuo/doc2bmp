@@ -158,7 +158,7 @@ public class IO {
     public void writeBmp(byte[] data) {
         data = doDeflection(data);
 
-        int width = config.getWidth(), height = width;
+        int width = config.getWidth(), height = config.getHeight();
 //        int height = data.length % (3 * width) == 0 ? data.length / 3 / width : data.length / 3 / width + 1;
 
         String fileName = getFileName("bmp", true);

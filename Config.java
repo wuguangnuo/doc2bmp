@@ -26,6 +26,8 @@ public class Config {
     private String suffix;
     // 图片宽度(像素)
     private int width;
+    // 图片高度（像素），默认值同宽度
+    private int height;
     // 误差模式 (加强抗干扰能力: 0~3)
     private int deflection;
     // 彩色模式
@@ -43,6 +45,7 @@ public class Config {
         this.logFileName = "log.txt";
         this.suffix = "zip";
         this.width = 1024;
+        this.height = 1024;
         this.deflection = 2;
         this.colorful = false;
         this.debug = true;
@@ -70,6 +73,10 @@ public class Config {
 
     public int getWidth() {
         return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 
     public int getDeflection() {
@@ -101,6 +108,10 @@ public class Config {
 
     public void setWidth(String width) {
         this.width = Integer.parseInt(width);
+    }
+
+    public void setHeight(String height) {
+        this.height = Integer.parseInt(height);
     }
 
     public void setDeflection(String deflection) {
