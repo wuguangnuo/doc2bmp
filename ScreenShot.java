@@ -69,7 +69,7 @@ public class ScreenShot {
                 io.print("截图:第" + num + "张 " + path.substring(config.getDefaultPath().length()));
             }
         } catch (IOException | AWTException e) {
-            e.printStackTrace();
+            io.printErr("screen shot 截图失败");
         }
         if (num >= maxNum) {
             io.end();
@@ -81,7 +81,7 @@ public class ScreenShot {
         try {
             ImageIO.write(im, "bmp", baos);
         } catch (IOException e) {
-            e.printStackTrace();
+            io.printErr("screen shot 检测失败");
         }
         byte[] data = baos.toByteArray();
 

@@ -35,7 +35,7 @@ public class ShowBmp extends JFrame {
         try {
             image = ImageIO.read(new File(bmpFiles.get(0)));
         } catch (IOException e) {
-            e.printStackTrace();
+            io.printErr("show bmp 图片读取失败");
         }
         assert image != null;
         label = new JLabel(new ImageIcon(image));
@@ -56,7 +56,7 @@ public class ShowBmp extends JFrame {
                         try {
                             label.setIcon(new ImageIcon(ImageIO.read(new File(bmpFiles.get(t)))));
                         } catch (IOException ex) {
-                            ex.printStackTrace();
+                            io.printErr("show bmp 图片展示失败");
                         }
                     } else {
                         io.print("等待..");
